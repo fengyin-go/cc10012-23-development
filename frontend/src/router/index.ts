@@ -13,6 +13,7 @@ const Compare = () => import('@/views/compare/index.vue')
 const Pipeline = () => import('@/views/pipeline/index.vue')
 const Datastore = () => import('@/views/datastore/index.vue')
 const Forecast = () => import('@/views/forecast/index.vue')
+const Forecastrun = () => import('@/views/forecastrun/index.vue')
 const Alert = () => import('@/views/alert/index.vue')
 const Cache = () => import('@/views/cache/index.vue')
 const Tag = () => import('@/views/tag/index.vue')
@@ -36,6 +37,7 @@ const router = createRouter({
     { path: '/pipeline', name: 'pipeline', component: Pipeline },
     { path: '/datastore', name: 'datastore', component: Datastore },
     { path: '/forecast', name: 'forecast', component: Forecast },
+    { path: '/forecastrun', name: 'forecastrun', component: Forecastrun },
     { path: '/alert', name: 'alert', component: Alert },
     { path: '/cache', name: 'cache', component: Cache },
     { path: '/tag', name: 'tag', component: Tag },

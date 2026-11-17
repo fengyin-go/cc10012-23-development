@@ -1,4 +1,18 @@
+import { assessSamples, makeBatchCode, predictInterval, trainPredict } from './forecast-engine'
+import { orderFeaturesOf } from './order-features'
 import type { EntryRow } from './types'
+
+// 预测模型结果种子：上一份完整预测（FRUN-0001，FORE-0003 基于 DATA-0002 训练，已生效，
+// DATA-0003 历史窗不足时报告继续读取它）和一份已失败可重试的结果（FRUN-0002）。
+// 预测明细由训练引擎对历史订单特征实时计算，保证批次、样本量、预测区间可核对。
+const DATASET_FIELDS_V2 = ['订单日期', '订单量', '促销标记', '客单价', '流量']
+const frun1Features = orderFeaturesOf('DATA-0002')
+const frun1Assess = assessSamples(frun1Features, ['促销标记'], DATASET_FIELDS_V2, '订单量', 7)
+const frun1Points = trainPredict(frun1Features, 7, '95%', ['促销标记'])
+const frun1Interval = predictInterval(frun1Points)
+const frun1Batch = makeBatchCode('FORE-0003', 'DATA-0002', 1)
+const frun2Assess = assessSamples(orderFeaturesOf('DATA-0002'), ['促销标记', '流量'], DATASET_FIELDS_V2, '订单量', 14)
+const frun2Batch = makeBatchCode('FORE-0002', 'DATA-0002', 1)
 
 // 示例数据：首次打开时播种，之后浏览器里的改动优先，重置才会回到这份。
 export const SEED_ROWS: Record<string, EntryRow[]> = {
@@ -445,31 +459,31 @@ export const SEED_ROWS: Record<string, EntryRow[]> = {
   "datastore": [
     {
       "id": 1,
-      "status": "草稿",
-      "pending": true,
+      "status": "已生效",
+      "pending": false,
       "abnormal": false,
       "数据集编号": "DATA-0001",
-      "数据集名称": "数据集管理样例1",
-      "来源表名": "数据集管理样例1",
-      "字段列表": "数据集管理样例1",
-      "更新策略": "数据集管理样例1",
-      "数据采样比例": "数据集管理样例1",
-      "生命周期天数": "数据集管理样例1",
-      "缓存开关": "数据集管理样例1"
+      "数据集名称": "历史订单主集",
+      "来源表名": "dwd_order_daily",
+      "字段列表": "订单日期，订单量，促销标记，客单价，流量",
+      "更新策略": "每日全量",
+      "数据采样比例": "100%",
+      "生命周期天数": "365",
+      "缓存开关": "开"
     },
     {
       "id": 2,
-      "status": "待审核",
-      "pending": true,
-      "abnormal": true,
+      "status": "已生效",
+      "pending": false,
+      "abnormal": false,
       "数据集编号": "DATA-0002",
-      "数据集名称": "数据集管理样例2",
-      "来源表名": "数据集管理样例2",
-      "字段列表": "数据集管理样例2",
-      "更新策略": "数据集管理样例2",
-      "数据采样比例": "数据集管理样例2",
-      "生命周期天数": "数据集管理样例2",
-      "缓存开关": "数据集管理样例2"
+      "数据集名称": "历史订单上一版",
+      "来源表名": "dwd_order_daily_v2",
+      "字段列表": "订单日期，订单量，促销标记，客单价，流量",
+      "更新策略": "每日全量",
+      "数据采样比例": "100%",
+      "生命周期天数": "365",
+      "缓存开关": "开"
     },
     {
       "id": 3,
@@ -477,43 +491,43 @@ export const SEED_ROWS: Record<string, EntryRow[]> = {
       "pending": false,
       "abnormal": false,
       "数据集编号": "DATA-0003",
-      "数据集名称": "数据集管理样例3",
-      "来源表名": "数据集管理样例3",
-      "字段列表": "数据集管理样例3",
-      "更新策略": "数据集管理样例3",
-      "数据采样比例": "数据集管理样例3",
-      "生命周期天数": "数据集管理样例3",
-      "缓存开关": "数据集管理样例3"
+      "数据集名称": "促销特征增量集",
+      "来源表名": "dwd_order_promo",
+      "字段列表": "订单日期，订单量，促销标记",
+      "更新策略": "增量更新（仅促销特征）",
+      "数据采样比例": "100%",
+      "生命周期天数": "180",
+      "缓存开关": "开"
     }
   ],
   "forecast": [
     {
       "id": 1,
-      "status": "草稿",
+      "status": "待训练",
       "pending": true,
       "abnormal": false,
       "模型编号": "FORE-0001",
-      "模型类型": "趋势预测样例1",
-      "训练数据集": "趋势预测样例1",
-      "目标字段": "趋势预测样例1",
-      "特征字段": "趋势预测样例1",
-      "预测步长": "趋势预测样例1",
-      "置信区间": "趋势预测样例1",
-      "评估指标": "趋势预测样例1"
+      "模型类型": "移动平均",
+      "训练数据集": "DATA-0001",
+      "目标字段": "订单量",
+      "特征字段": "促销标记，客单价，流量",
+      "预测步长": "7",
+      "置信区间": "95%",
+      "评估指标": "MAPE"
     },
     {
       "id": 2,
       "status": "待训练",
       "pending": true,
-      "abnormal": true,
+      "abnormal": false,
       "模型编号": "FORE-0002",
-      "模型类型": "趋势预测样例2",
-      "训练数据集": "趋势预测样例2",
-      "目标字段": "趋势预测样例2",
-      "特征字段": "趋势预测样例2",
-      "预测步长": "趋势预测样例2",
-      "置信区间": "趋势预测样例2",
-      "评估指标": "趋势预测样例2"
+      "模型类型": "线性回归",
+      "训练数据集": "DATA-0002",
+      "目标字段": "订单量",
+      "特征字段": "促销标记，流量",
+      "预测步长": "14",
+      "置信区间": "90%",
+      "评估指标": "RMSE"
     },
     {
       "id": 3,
@@ -521,13 +535,51 @@ export const SEED_ROWS: Record<string, EntryRow[]> = {
       "pending": false,
       "abnormal": false,
       "模型编号": "FORE-0003",
-      "模型类型": "趋势预测样例3",
-      "训练数据集": "趋势预测样例3",
-      "目标字段": "趋势预测样例3",
-      "特征字段": "趋势预测样例3",
-      "预测步长": "趋势预测样例3",
-      "置信区间": "趋势预测样例3",
-      "评估指标": "趋势预测样例3"
+      "模型类型": "移动平均",
+      "训练数据集": "DATA-0003",
+      "目标字段": "订单量",
+      "特征字段": "促销标记",
+      "预测步长": "7",
+      "置信区间": "95%",
+      "评估指标": "MAPE"
+    }
+  ],
+  "forecastrun": [
+    {
+      "id": 1,
+      "status": "已生效",
+      "pending": false,
+      "abnormal": false,
+      "结果编号": "FRUN-0001",
+      "模型编号": "FORE-0003",
+      "训练批次": frun1Batch,
+      "数据集版本": "DATA-0002",
+      "特征字段": "促销标记",
+      "样本量": frun1Assess.sampleCount,
+      "预测区间": frun1Interval,
+      "样本依据": frun1Assess.basis,
+      "异常原因": "",
+      "预测步长": "7",
+      "预测明细": JSON.stringify(frun1Points),
+      "冲突判定": ""
+    },
+    {
+      "id": 2,
+      "status": "已失败",
+      "pending": true,
+      "abnormal": true,
+      "结果编号": "FRUN-0002",
+      "模型编号": "FORE-0002",
+      "训练批次": frun2Batch,
+      "数据集版本": "DATA-0002",
+      "特征字段": "促销标记，流量",
+      "样本量": frun2Assess.sampleCount,
+      "预测区间": "",
+      "样本依据": frun2Assess.basis,
+      "异常原因": "训练中断：历史订单特征读取超时，已保留现场，可重试",
+      "预测步长": "14",
+      "预测明细": "",
+      "冲突判定": ""
     }
   ],
   "alert": [
